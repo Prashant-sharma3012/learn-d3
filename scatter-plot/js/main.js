@@ -1,5 +1,10 @@
 //, 543, 123, 345, 678, 50, 150, 800
 
+data = data.map(year => {
+  year.countries = year.countries.filter(country => country.income && country.life_exp);
+  return year
+});
+
 let margin = {
   left: 100,
   right: 10,
@@ -17,17 +22,18 @@ const getColor = (countries) => d3.scaleOrdinal()
   .domain(countries.map((d) => d.country))
   .range(d3.schemeCategory10)
 
-const getY = (countries) => d3.scaleLinear()
-  .domain([0, d3.max(countries, d => d.life_exp || 0)])
+const getY = () => d3.scaleLinear()
   .range([chartH, 0])
+  .domain([0, 90]);
 
 const populationScale = (countries) => d3.scaleLinear()
   .domain([0, d3.max(countries, d => d.population || 0)])
   .range([5, 30])
 
-const getX = (countries) => d3.scaleLinear()
-  .domain([0, d3.max(countries, d => d.income || 0)])
-  .range([0, chartW])
+const getX = () => d3.scaleLog()
+.base(10)
+.range([0, chartW])
+.domain([142, 150000]);
 
 let svg = d3.select("#chart-area")
   .append("svg")
@@ -62,8 +68,8 @@ const update = (data) => {
 
   currentIndex = currentIndex + 1;
 
-  let x = getX(countries);
-  let y = getY(countries);
+  let x = getX();
+  let y = getY();
   let color = getColor(countries);
   let population = populationScale(countries);
 
@@ -82,24 +88,24 @@ const update = (data) => {
     .data(countries)
 
   circles.exit()
-    .transition(t)
-    .attr("height", 0)
+    .attr("class", "exit")
     .remove();
 
   circles.transition(t)
-    .attr("cx", (d) => x(d.income || 0))
-    .attr("cy", (d) => chartH - y(d.life_exp))
+    .attr("cx", (d) => x(d.income))
+    .attr("cy", (d) => y(d.life_exp))
     .attr("r", d => population(d.population))
     .attr("fill", d => color(d.country))
 
   circles.enter()
     .append('circle')
-    .attr("cx", x(0))
-    .attr("cy", y(0))
-    .attr("r", population(0))
     .attr("fill", d => color(d.country))
     .transition(t)
-    .attr("cx", (d) => x(d.income || 0))
-    .attr("cy", (d) => chartH - y(d.life_exp))
+    .attr("cx", (d) => {
+      console.log(d.income)
+      return x(d.income)
+    
+    })
+    .attr("cy", (d) => y(d.life_exp))
     .attr("r", d => population(d.population))
 }
